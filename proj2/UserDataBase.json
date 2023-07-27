@@ -1,1 +1,23 @@
-[{"name":"serkan angun","email":"angun.serkan2@example.com","age":24,"address":"Konak, Izmir","id":1},{"id":3,"name":"jimmy Mcgill","email":"jimmy@example.com","age":31,"address":"Albuquerque, New Mexico"},{"name":"zeynep bayraktaroğlu","email":"zeynobay99@example.com","age":24,"address":"Karabağlar, Izmir","id":1690445773691}]
+[
+  {
+    "name": "serkan angun",
+    "email": "angun.serkan2@example.com",
+    "age": 24,
+    "address": "Konak, Izmir",
+    "id": 1
+  },
+  {
+    "id": 3,
+    "name": "jimmy Mcgill",
+    "email": "jimmy@example.com",
+    "age": 31,
+    "address": "Albuquerque, New Mexico"
+  },
+  {
+    "name": "zeynep bayraktaroğlu",
+    "email": "zeynobay99@example.com",
+    "age": 24,
+    "address": "Karabağlar, Izmir",
+    "id": 1690445773691
+  }
+]
