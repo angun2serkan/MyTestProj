@@ -10,6 +10,10 @@ function readDataFromFile() {
   return JSON.parse(data);
 }
 
+function writeDataToFile(data) {
+  fs.writeFileSync(dataFilePath, JSON.stringify(data));
+}
+
 router.get("/users", (req, res) => {
   const users = readDataFromFile();
   res.send(users);
@@ -21,19 +25,44 @@ router.get("/users/:id", (req, res) => {
   const user = users.find((user) => user.id === parseInt(userId));
 
   if (user) {
-    res.send(user);
+    res.send(user); // Send the user object if found
   } else {
     res.status(404).send({
       error: "User not found!",
-    });
+    }); // Otherwise, send the error response
   }
-  res.send(users);
 });
 
 router.post("/users", (req, res) => {
   const user = req.body;
+  const users = readDataFromFile();
+  user.id = new Date().getTime();
+  users.push(user);
+  writeDataToFile(users);
   console.log("user: ", user);
-  res.send("Ok");
+  res.send(user);
+});
+
+router.put("/users/:id", (req, res) => {
+  const users = readDataFromFile();
+  const userId = req.params.id;
+  const updateUser = req.body;
+  const userIndex = users.findIndex((user) => user.id === parseInt(userId));
+
+  if (userIndex === -1) {
+    return res.status(404).send({
+      error: "User not found!",
+    });
+  }
+
+  users[userIndex] = {
+    ...users[userIndex],
+    ...updateUser,
+    id: parseInt(userId), // Ensure the ID remains the same
+  };
+
+  writeDataToFile(users);
+  res.send(users[userIndex]);
 });
 
 router.get("/test", (req, res) =>
