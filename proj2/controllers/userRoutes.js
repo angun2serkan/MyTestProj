@@ -65,6 +65,25 @@ router.put("/users/:id", (req, res) => {
   res.send(users[userIndex]);
 });
 
+router.delete("/users/:id", (req, res) => {
+  const users = readDataFromFile();
+  const userId = req.params.id;
+
+  const userIndex = users.findIndex((user) => user.id === parseInt(userId));
+
+  if (userIndex == -1) {
+    return res.status(404).send({
+      error: "User not found!",
+    });
+  }
+
+  users.splice(userIndex, 1);
+  writeDataToFile(users);
+  res.send({
+    message: "User deleted successfully!",
+  });
+});
+
 router.get("/test", (req, res) =>
   res.send({
     message: "Test is working",
