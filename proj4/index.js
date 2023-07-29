@@ -1,52 +1,81 @@
 const express = require("express");
-const bodyparser = require("body-parser");
 const cors = require("cors");
-const PORT = 8004;
-require("dotenv").config();
-const app = express();
-require("./db");
-const User = require("./models/userSchema");
-const bcrypt = require("bcryptjs");
-const bodyParser = require("body-parser");
 const jwt = require("jsonwebtoken");
+const bodyParser = require("body-parser");
+const bcrypt = require("bcryptjs");
+const { ValidationError } = require("mongoose").Error;
 
-app.use(bodyParser.json());
+require("dotenv").config();
+
+const db = require("./db");
+const User = require("./models/userSchema");
+
+const PORT = 8004;
+const app = express();
+
+// Middleware
+app.use(express.json());
 app.use(cors());
 
-function authenticateToken(req, res, next) {
+// Custom middleware to verify JWT token
+function verifyAuthToken(req, res, next) {
   const token = req.headers.authorization;
 
-  if (!token) return res.status(401).json({ message: "Auth Error" });
-
-  try {
-    const decoded = jwt.verify(
-      token.replace("Bearer ", ""),
-      process.env.JWT_SECRET_KEY
-    );
-    req.userId = decoded.id;
-    next();
-  } catch (err) {
-    if (err instanceof jwt.JsonWebTokenError) {
-      console.log("Invalid Token: ", err.message);
-      return res.status(401).json({ message: "Invalid Token" });
-    }
-
-    console.log("Error: ", err);
-    res.status(500).json({ message: "Something went wrong" });
+  if (!token) {
+    return res.status(401).json({ message: "Auth Error: No token provided" });
   }
+
+  jwt.verify(
+    token.replace("Bearer ", ""),
+    process.env.JWT_SECRET_KEY,
+    (err, decoded) => {
+      if (err) {
+        if (err instanceof jwt.TokenExpiredError) {
+          return res
+            .status(401)
+            .json({ message: "Auth Error: Token has expired" });
+        } else if (err instanceof jwt.JsonWebTokenError) {
+          console.log("Invalid Token: ", err.message);
+          return res.status(401).json({ message: "Auth Error: Invalid Token" });
+        } else {
+          console.log("Error: ", err);
+          return res.status(500).json({ message: "Internal server error" });
+        }
+      }
+
+      req.userId = decoded.id;
+      next();
+    }
+  );
 }
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  if (err instanceof ValidationError) {
+    const validationErrors = Object.values(err.errors).map(
+      (error) => error.message
+    );
+    console.log("Validation Errors: ", validationErrors);
+    return res
+      .status(422)
+      .json({ message: "Validation Error", errors: validationErrors });
+  }
+
+  console.error("Error:", err);
+  res.status(500).json({ message: "Something went wrong" });
+});
 
 app.get("/", (req, res) => {
   res.send("The API is working");
 });
 
-app.post("/register", async (req, res) => {
+app.post("/register", async (req, res, next) => {
   try {
     const { name, password, email, age, gender } = req.body;
     const existingUser = await User.findOne({ email });
 
     if (existingUser) {
-      return res.status(409).jsonp({ message: "Email already exists" });
+      return res.status(409).json({ message: "Email already exists" });
     }
 
     const salt = await bcrypt.genSalt(10);
@@ -66,17 +95,18 @@ app.post("/register", async (req, res) => {
       message: "User registered successfully",
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    next(err);
   }
 });
 
-app.post("/login", async (req, res) => {
+app.post("/login", async (req, res, next) => {
   try {
     const { email, password } = req.body;
     const existingUser = await User.findOne({ email });
 
     if (!existingUser) {
-      return res.status(401).json({ message: "Invalid credentials" });
+      const error = new Error("User does not exist");
+      return next(error);
     }
 
     const isPasswordCorrect = await bcrypt.compare(
@@ -85,7 +115,8 @@ app.post("/login", async (req, res) => {
     );
 
     if (!isPasswordCorrect) {
-      return res.status(401).json({ message: "Invalid credentials" });
+      const error = new Error("Invalid credentials");
+      return next(error);
     }
 
     const token = jwt.sign(
@@ -101,23 +132,24 @@ app.post("/login", async (req, res) => {
       message: "User logged in successfully",
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    next(err);
   }
 });
 
-app.post("/getmyprofile", authenticateToken, async (req, res) => {
+app.post("/getmyprofile", verifyAuthToken, async (req, res, next) => {
   const userId = req.userId; // Use the authenticated user's ID
 
   try {
     const user = await User.findById(userId);
 
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      const error = new Error("User not found");
+      return next(error);
     }
 
     res.status(200).json({ user });
   } catch (err) {
-    res.status(500).json({ message: "Internal server error" });
+    next(err);
   }
 });
 
