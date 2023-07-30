@@ -4,6 +4,7 @@ const jwt = require("jsonwebtoken");
 const bodyParser = require("body-parser");
 const bcrypt = require("bcryptjs");
 const { ValidationError } = require("mongoose").Error;
+const cookieParser = require("cookie-parser");
 
 require("dotenv").config();
 
@@ -16,6 +17,7 @@ const app = express();
 // Middleware
 app.use(express.json());
 app.use(cors());
+app.use(cookieParser());
 
 // Custom middleware to verify JWT token
 function verifyAuthToken(req, res, next) {
@@ -119,7 +121,7 @@ app.post("/login", async (req, res, next) => {
       return next(error);
     }
 
-    const token = jwt.sign(
+    const accessToken = jwt.sign(
       { id: existingUser._id },
       process.env.JWT_SECRET_KEY,
       {
@@ -127,9 +129,66 @@ app.post("/login", async (req, res, next) => {
       }
     );
 
+    const refreshToken = jwt.sign(
+      { id: existingUser._id },
+      process.env.JWT_REFRESH_SECRET_KEY
+    );
+
+    existingUser.refreshToken = refreshToken;
+    await existingUser.save();
+
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      path: "/refresh_token",
+    });
+
     res.status(200).json({
-      token,
+      accessToken,
+      refreshToken,
       message: "User logged in successfully",
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// New endpoint to handle token refresh
+app.get("/refresh_token", async (req, res, next) => {
+  const token = req.cookies.refreshToken;
+
+  if (!token) {
+    return res.status(401).json({ message: "Refresh token not found" });
+  }
+
+  try {
+    const decodedRefresh = jwt.verify(
+      token,
+      process.env.JWT_REFRESH_SECRET_KEY
+    );
+    const userId = decodedRefresh.id;
+
+    const existingUser = await User.findById(userId);
+
+    if (!existingUser || token !== existingUser.refreshToken) {
+      return res.status(401).json({ message: "Invalid refresh token" });
+    }
+
+    const newAccessToken = jwt.sign(
+      { id: existingUser._id },
+      process.env.JWT_SECRET_KEY,
+      {
+        expiresIn: "1h",
+      }
+    );
+
+    res.cookie("refreshToken", token, {
+      httpOnly: true,
+      path: "/refresh_token",
+    });
+
+    res.status(200).json({
+      accessToken: newAccessToken,
+      message: "Token refreshed successfully",
     });
   } catch (err) {
     next(err);
