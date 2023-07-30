@@ -68,7 +68,7 @@ app.use((err, req, res, next) => {
 });
 
 app.get("/", (req, res) => {
-  res.send("The API is working");
+  res.json({ message: "The API is working" });
 });
 
 app.post("/register", async (req, res, next) => {
