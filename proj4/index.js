@@ -195,18 +195,41 @@ app.get("/refresh_token", async (req, res, next) => {
   }
 });
 
-app.post("/getmyprofile", verifyAuthToken, async (req, res, next) => {
-  const userId = req.userId; // Use the authenticated user's ID
+app.get("/getmyprofile", async (req, res, next) => {
+  const token = req.headers.authorization;
 
   try {
-    const user = await User.findById(userId);
+    jwt.verify(
+      token.replace("Bearer ", ""),
+      process.env.JWT_SECRET_KEY,
+      async (err, decoded) => {
+        if (err) {
+          if (err instanceof jwt.TokenExpiredError) {
+            return res
+              .status(401)
+              .json({ message: "Auth Error: Token has expired" });
+          } else if (err instanceof jwt.JsonWebTokenError) {
+            console.log("Invalid Token: ", err.message);
+            return res
+              .status(401)
+              .json({ message: "Auth Error: Invalid Token" });
+          } else {
+            console.log("Error: ", err);
+            return res.status(500).json({ message: "Internal server error" });
+          }
+        }
 
-    if (!user) {
-      const error = new Error("User not found");
-      return next(error);
-    }
+        const userId = decoded.id;
+        const user = await User.findById(userId);
 
-    res.status(200).json({ user });
+        if (!user) {
+          const error = new Error("User not found");
+          return next(error);
+        }
+
+        res.status(200).json({ user });
+      }
+    );
   } catch (err) {
     next(err);
   }

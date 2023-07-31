@@ -16,6 +16,8 @@ function App() {
     email: "",
   });
 
+  const [userData, setUserData] = useState(null);
+
   const checkApi = () => {
     fetch("http://localhost:8004", {
       method: "GET",
@@ -59,7 +61,29 @@ function App() {
       .then((res) => res.json())
       .then((data) => {
         alert(data.message);
-        console.log(data);
+        console.log(data.accessToken);
+        localStorage.setItem("accessToken", data.accessToken);
+      })
+      .catch((err) => console.log(err));
+  };
+
+  const getSavedToken = () => {
+    const token = localStorage.getItem("accessToken");
+    console.log(token);
+  };
+
+  const getUserData = () => {
+    const token = localStorage.getItem("accessToken");
+    fetch("http://localhost:8004/getmyprofile", {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `${token}`,
+      },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        setUserData(data.user);
       })
       .catch((err) => console.log(err));
   };
@@ -129,6 +153,24 @@ function App() {
       />
 
       <button onClick={handleLogin}>Login</button>
+
+      <br></br>
+      <br></br>
+      <br></br>
+      <button onClick={getSavedToken}>Get Saved Token</button>
+
+      <br></br>
+      <br></br>
+      <br></br>
+      <h1>User Data</h1>
+      <button onClick={getUserData}>Get userData</button>
+      {userData && (
+        <div>
+          <p>{userData.name}</p>
+          <p>{userData.email}</p>
+          <p>{userData.age}</p>
+        </div>
+      )}
     </div>
   );
 }
