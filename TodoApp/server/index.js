@@ -8,7 +8,9 @@ require("dotenv").config();
 require("./db");
 
 app.use(bodyParser.json());
+app.use(cors());
 app.use("/todoroutes", todoRoutes);
+// frontend url = http://localhost:3000
 
 app.get("/", (req, res) => {
   res.json({
