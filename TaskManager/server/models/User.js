@@ -8,19 +8,25 @@ const userSchema = new mongoose.Schema({
 });
 
 // Define the pre-save middleware to hash the password before saving the user
-userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) {
-    return next(); // If the password is not modified, skip hashing
-  }
+userSchema.pre(
+  "save",
+  async function (next) {
+    if (!this.isModified("password")) {
+      return next(); // If the password is not modified, skip hashing
+    }
 
-  try {
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-    next();
-  } catch (err) {
-    return next(err);
+    try {
+      const salt = await bcrypt.genSalt(10);
+      this.password = await bcrypt.hash(this.password, salt);
+      next();
+    } catch (err) {
+      return next(err);
+    }
+  },
+  {
+    timestamps: true,
   }
-});
+);
 
 const User = mongoose.model("User", userSchema);
 module.exports = User;
