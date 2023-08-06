@@ -28,4 +28,37 @@ router.post("/", auth, async (req, res) => {
   }
 });
 
+// get user tasks
+router.get("/", auth, async (req, res) => {
+  try {
+    const tasks = await Task.find({
+      owner: req.user._id,
+    });
+    res.status(200).json({
+      tasks,
+      count: tasks.length,
+      message: "Tasks Fetched Successfully",
+    });
+  } catch (err) {
+    res.status(500).send({ error: err });
+  }
+});
+
+//fetch a task by id
+router.get("/:id", auth, async (req, res) => {
+  const taskid = req.params.id;
+  try {
+    const task = await Task.findOne({
+      _id: taskid,
+      owner: req.user._id,
+    });
+    if (!task) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+    res.status(200).json({ task, message: "Task Fetched Successfully" });
+  } catch (err) {
+    res.status(500).send({ error: err });
+  }
+});
+
 module.exports = router;
