@@ -11,15 +11,13 @@ router.get("/", (req, res) => {
 router.post("/register", async (req, res) => {
   try {
     const { name, email, password } = req.body;
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).send({ message: "Email is already registered" });
     }
 
-    const user = new User({ name, email, password: hashedPassword });
+    const user = new User({ name, email, password });
 
     await user.save();
     res.status(201).send({ user, message: "User Created Successfully" });
