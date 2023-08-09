@@ -1,11 +1,11 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const app = express();
+require("dotenv").config();
 const PORT = 8008;
 const cors = require("cors");
 const authRoutes = require("./routes/authRoutes");
 
-require("dotenv").config();
 require("./db");
 
 app.use(cors());
