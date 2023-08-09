@@ -47,7 +47,7 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    const token = jwt.sign({ id: user_id }, JWT_SECRET_KEY);
+    const token = jwt.sign({ id: user._id }, JWT_SECRET_KEY);
 
     res.json({
       token,
@@ -79,6 +79,16 @@ router.post("/sendotp", async (req, res) => {
           message: err.message,
         });
       } else {
+        const user = await User.findOne({ email });
+        if (!user) {
+          return res.status(400).json({
+            message: "User not found",
+          });
+        }
+
+        user.otp = otp;
+        await user.save();
+        console.log(otp);
         res.json({
           message: "OTP sent successfully",
         });
