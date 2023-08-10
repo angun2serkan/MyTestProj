@@ -4,15 +4,19 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const User = require("../models/User");
 const nodemailer = require("nodemailer");
-require("dotenv").config();
-const JWT_SECRET_KEY = process.env.JWT_SECRET_KEY;
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: process.env.COMPANY_EMAIL,
-    pass: process.env.COMPANY_PASSWORD,
+    user: "codershub.2430@gmail.com",
+    pass: "bwmekvkdfgayrkvh",
   },
+});
+
+router.get("/", (req, res) => {
+  res.json({
+    message: "User route is working",
+  });
 });
 
 router.post("/register", async (req, res) => {
@@ -35,7 +39,7 @@ router.post("/login", async (req, res) => {
     const { email, password } = req.body;
     const user = await User.findOne({ email });
     if (!user) {
-      res.status(400).json({
+      return res.status(400).json({
         message: "User not found",
       });
     }
@@ -47,9 +51,16 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    const token = jwt.sign({ id: user._id }, JWT_SECRET_KEY);
+    const token = jwt.sign(
+      {
+        userId: user._id,
+      },
+      process.env.JWT_SECRET_KEY
+    );
 
+    // console.log(process.env.JWT_SECRET_KEY)
     res.json({
+      // message: 'ok'
       token,
       user,
       message: "User logged in successfully",
@@ -64,12 +75,18 @@ router.post("/login", async (req, res) => {
 router.post("/sendotp", async (req, res) => {
   const { email } = req.body;
   const otp = Math.floor(100000 + Math.random() * 900000);
+
+  // res.json({
+  //     COMPANY_EMAIL: process.env.COMPANY_EMAIL,
+  //     COMPANY_PASSWORD: process.env.COMPANY_PASSWORD,
+
+  // });
   try {
     const mailOptions = {
-      from: "angun.serkan2@gmail.com",
+      from: process.env.COMPANY_EMAIL,
       to: email,
       subject: "OTP for verification",
-      text: `Your OTP for verification is ${otp} and this is my love <3`,
+      text: `Your OTP for verification is ${otp}`,
     };
 
     transporter.sendMail(mailOptions, async (err, info) => {
@@ -88,6 +105,7 @@ router.post("/sendotp", async (req, res) => {
 
         user.otp = otp;
         await user.save();
+
         console.log(otp);
         res.json({
           message: "OTP sent successfully",
@@ -95,6 +113,7 @@ router.post("/sendotp", async (req, res) => {
       }
     });
   } catch (err) {
+    console.log(err);
     res.status(500).json({
       message: err.message,
     });
@@ -109,7 +128,7 @@ router.post("/changepassword", async (req, res) => {
 
     if (!user) {
       return res.status(400).json({
-        message: "Invalid OTP",
+        message: "User not found",
       });
     }
 
