@@ -125,7 +125,7 @@ app.post("/login", async (req, res, next) => {
       { id: existingUser._id },
       process.env.JWT_SECRET_KEY,
       {
-        expiresIn: "1h",
+        expiresIn: "5m",
       }
     );
 
@@ -195,7 +195,7 @@ app.get("/refresh_token", async (req, res, next) => {
   }
 });
 
-app.get("/getmyprofile", async (req, res, next) => {
+app.get("/getmyprofile", verifyAuthToken, async (req, res, next) => {
   const token = req.headers.authorization;
 
   try {

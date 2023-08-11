@@ -40,7 +40,7 @@ router.get("/getallblogs", async (req, res) => {
 
 router.get("/getallblogs/:id", async (req, res) => {
   try {
-    const blogs = await Blog.findById(req.params.id);
+    const blog = await Blog.findById(req.params.id);
     res.json({
       message: "Blogs fetched successfully",
       blog,
